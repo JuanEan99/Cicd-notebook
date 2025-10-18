@@ -32,6 +32,8 @@ NL  := echo ""
 SEP := /        # separador de Linux/Mac
 endif
 
+
+HF  := $(PY) -m huggingface_hub.cli
 # ---- targets ---------------------------------------------------
 
 install:
@@ -40,6 +42,7 @@ install:
 
 format:
 	$(PY) -m black *.py
+	black . --exclude venv || true
 
 train:
 	$(PY) train.py
@@ -76,11 +79,19 @@ hf-login:
 	# En Linux/macOS: huggingface-cli login --add-to-git-credential
 
 # Sube App, Modelo y Métricas a tu Space (cambia el owner/nombre!)
+# CAMBIA por tu space
+SPACE := JuanEan99/Drug-Classification
+
 push-hub:
-	# Reemplaza usuario/Space por el tuyo, p.ej.: JuanEan99/Drug-Classification
-	.venv\Scripts\huggingface-cli.exe upload JuanEan99/Drug-Classification ./App --repo-type=space --commit-message="Sync App files"
-	.venv\Scripts\huggingface-cli.exe upload JuanEan99/Drug-Classification ./Model /Model --repo-type=space --commit-message="Sync Model"
-	.venv\Scripts\huggingface-cli.exe upload JuanEan99/Drug-Classification ./Results /Metrics --repo-type=space --commit-message="Sync Metrics"
+	@if not exist App    (echo [ERROR] Falta carpeta App    && exit 1)
+	@if not exist Model  (echo [ERROR] Falta carpeta Model  && exit 1)
+	@if not exist Results (echo [ERROR] Falta carpeta Results && exit 1)
+	rem Crea el Space si no existe (idempotente)
+	$(HF) repo create $(SPACE) --type space --space-sdk gradio || echo Repo ya existe
+	rem Subidas (CLI nueva)
+	$(HF) upload --repo $(SPACE) --repo-type space --path-in-repo App     App     -m "Sync App files"
+	$(HF) upload --repo $(SPACE) --repo-type space --path-in-repo Model   Model   -m "Sync Model"
+	$(HF) upload --repo $(SPACE) --repo-type space --path-in-repo Metrics Results -m "Sync Metrics"
 
 deploy: hf-login push-hub
 

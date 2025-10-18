@@ -4,3 +4,4 @@ scikit-learn
 matplotlib
 black
 huggingface_hub
+skops>=0.9.0
